@@ -2,7 +2,7 @@
 // Agent requirements: docker and kubectl on PATH (plus minikube when REGISTRY is empty).
 // Works on both Linux (sh) and Windows (bat) agents.
 
-def run(String cmd) {
+def runCmd(String cmd) {
   if (isUnix()) {
     sh cmd
   } else {
@@ -59,13 +59,13 @@ pipeline {
 
     stage('Test') {
       steps {
-        run "docker build --target test -t ${env.APP_NAME}:test ."
+        runCmd "docker build --target test -t ${env.APP_NAME}:test ."
       }
     }
 
     stage('Build image') {
       steps {
-        run "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} --build-arg GIT_COMMIT=${env.COMMIT} -t ${env.IMAGE} ."
+        runCmd "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} --build-arg GIT_COMMIT=${env.COMMIT} -t ${env.IMAGE} ."
       }
     }
 
@@ -73,10 +73,10 @@ pipeline {
       steps {
         script {
           if (params.REGISTRY?.trim()) {
-            run "docker push ${env.IMAGE}"
+            runCmd "docker push ${env.IMAGE}"
           } else {
             // Piped via stdin: `minikube image load <name>` fails on Windows 11 builds without wmic.
-            run "docker save ${env.IMAGE} | minikube -p ${params.MINIKUBE_PROFILE} image load -"
+            runCmd "docker save ${env.IMAGE} | minikube -p ${params.MINIKUBE_PROFILE} image load -"
           }
         }
       }
@@ -90,9 +90,9 @@ pipeline {
           writeFile file: 'k8s-rendered/service.yaml', text: readFile('k8s/service.yaml')
 
           withKube {
-            run "kubectl create namespace ${params.K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
-            run "kubectl apply -n ${params.K8S_NAMESPACE} -f k8s-rendered/"
-            run "kubectl rollout status deployment/${env.APP_NAME} -n ${params.K8S_NAMESPACE} --timeout=120s"
+            runCmd "kubectl create namespace ${params.K8S_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -"
+            runCmd "kubectl apply -n ${params.K8S_NAMESPACE} -f k8s-rendered/"
+            runCmd "kubectl rollout status deployment/${env.APP_NAME} -n ${params.K8S_NAMESPACE} --timeout=120s"
           }
         }
       }
@@ -102,7 +102,7 @@ pipeline {
       steps {
         script {
           withKube {
-            run "kubectl exec -n ${params.K8S_NAMESPACE} deploy/${env.APP_NAME} -- wget -qO- http://127.0.0.1:3000/"
+            runCmd "kubectl exec -n ${params.K8S_NAMESPACE} deploy/${env.APP_NAME} -- wget -qO- http://127.0.0.1:3000/"
           }
         }
       }
@@ -115,8 +115,8 @@ pipeline {
         withKube {
           // Best-effort diagnostics; don't mask the original failure.
           catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-            run "kubectl get pods -n ${params.K8S_NAMESPACE} -o wide"
-            run "kubectl describe deployment/${env.APP_NAME} -n ${params.K8S_NAMESPACE}"
+            runCmd "kubectl get pods -n ${params.K8S_NAMESPACE} -o wide"
+            runCmd "kubectl describe deployment/${env.APP_NAME} -n ${params.K8S_NAMESPACE}"
           }
         }
       }
