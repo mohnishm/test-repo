@@ -1,0 +1,20 @@
+{
+  "name": "test-repo",
+  "version": "1.0.0",
+  "description": "A small Node.js + TypeScript service for testing a Jenkins to Kubernetes pipeline",
+  "private": true,
+  "main": "dist/src/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "pretest": "npm run build",
+    "test": "node --test \"dist/test/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  }
+}

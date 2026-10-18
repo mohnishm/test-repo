@@ -1,0 +1,10 @@
+node_modules
+dist
+k8s-rendered
+.git
+.gitignore
+.dockerignore
+Dockerfile
+Jenkinsfile
+k8s
+*.md
