@@ -23,7 +23,7 @@ Example response:
 src/            app.ts (routes), config.ts (env), server.ts (startup + graceful SIGTERM)
 test/           node:test unit tests
 Dockerfile      build -> test -> runtime stages (node:24-alpine, runs as non-root)
-k8s/            Deployment (2 replicas, probes, Downward API) + ClusterIP Service
+k8s/            Deployment (2 replicas, probes, Downward API) + NodePort Service (30080)
 Jenkinsfile     Test -> Build image -> Publish -> Deploy -> Smoke test
 ```
 
@@ -60,7 +60,7 @@ The agent that runs the pipeline needs `docker` and `kubectl` on its PATH. It al
 
 | Parameter                  | Default        | Meaning                                                                                   |
 |----------------------------|----------------|-------------------------------------------------------------------------------------------|
-| `K8S_NAMESPACE`            | `jenkins-demo` | Namespace to deploy into (created if missing)                                             |
+| `K8S_NAMESPACE`            | `default`      | Namespace to deploy into (created if missing)                                             |
 | `REGISTRY`                 | *(empty)*      | Leave empty to load the image into minikube; otherwise e.g. `localhost:5000` to push there |
 | `MINIKUBE_PROFILE`         | `minikube`     | minikube profile used when `REGISTRY` is empty                                            |
 | `KUBECONFIG_CREDENTIAL_ID` | *(empty)*      | Optional *Secret file* credential holding a kubeconfig                                    |
@@ -77,17 +77,21 @@ The default image-loading path (`docker save | minikube image load -`) still nee
 ## Check the deployment
 
 ```bash
-kubectl get pods -n jenkins-demo
+kubectl get pods -n default
 ```
+
+The Service is a `NodePort` on port `30080`. Get a URL for it with:
 
 ```bash
-kubectl port-forward -n jenkins-demo svc/test-repo 8080:80
+minikube service test-repo -n default --url
 ```
 
-Then open http://localhost:8080. Refresh a few times to see requests answered by different pods.
+With minikube's Docker driver on Windows or macOS, the node isn't reachable from the host directly, so this command opens a tunnel and prints a `http://127.0.0.1:<port>` URL. Keep that terminal open while you use the URL. On Linux (or with a VM driver) you can open `http://<minikube ip>:30080` directly.
+
+Refresh a few times to see requests answered by different pods. If you only need to reach the app quickly, `kubectl port-forward -n default svc/test-repo 3000:80` also works, but it always talks to a single pod.
 
 ## Clean up
 
 ```bash
-kubectl delete namespace jenkins-demo
+kubectl delete -n default deployment/test-repo service/test-repo
 ```

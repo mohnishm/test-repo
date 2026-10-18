@@ -5,10 +5,11 @@ metadata:
   labels:
     app.kubernetes.io/name: test-repo
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app.kubernetes.io/name: test-repo
   ports:
     - name: http
       port: 80
       targetPort: http
+      nodePort: 30080 # fixed so the URL stays the same across deploys (allowed range 30000-32767)
