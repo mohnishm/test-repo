@@ -30,7 +30,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'K8S_NAMESPACE', defaultValue: 'jenkins-demo',
+    string(name: 'K8S_NAMESPACE', defaultValue: 'default',
            description: 'Namespace to deploy into (created if missing).')
     string(name: 'REGISTRY', defaultValue: '',
            description: 'Registry to push to, e.g. localhost:5000. Leave empty to load the image straight into minikube.')
